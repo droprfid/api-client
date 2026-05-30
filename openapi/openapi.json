@@ -12,6 +12,52 @@
     }
   ],
   "paths": {
+    "/public/ai/generate-session": {
+      "post": {
+        "tags": [
+          "Public AI"
+        ],
+        "summary": "Generate a simulated scan session from a natural-language description",
+        "description": "Uses AI to produce a session metadata object and a list of RFID entries based on the provided description. Useful for testing and demo data generation.",
+        "operationId": "generateSession",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSessionResponse"
+                }
+              }
+            },
+            "description": "Generated session data."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
     "/public/orders": {
       "get": {
         "tags": [
@@ -996,6 +1042,44 @@
       "Error": {
         "properties": {
           "error": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GenerateSessionRequest": {
+        "properties": {
+          "description": {
+            "description": "Natural-language description of the session to generate.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "type": "object"
+      },
+      "GenerateSessionResponse": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "rfid_entries": {
+            "items": {
+              "$ref": "#/components/schemas/GeneratedRfidEntry"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "GeneratedRfidEntry": {
+        "properties": {
+          "epc": {
+            "type": "string"
+          },
+          "sku_code": {
             "type": "string"
           }
         },
