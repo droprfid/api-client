@@ -1,10 +1,13 @@
 #!/usr/bin/env node
+import { execFile } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { promisify } from "node:util";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const defaultOutput = path.join(repoRoot, "openapi", "openapi.json");
+const execFileAsync = promisify(execFile);
 
 function usage() {
   console.error(`Usage:
@@ -53,16 +56,31 @@ function extractRawString(source, constName) {
 }
 
 async function loadFromRfidDir(rfidDir) {
+  const resolvedRfidDir = path.resolve(rfidDir);
   const openapiGo = path.join(
-    path.resolve(rfidDir),
+    resolvedRfidDir,
     "backend",
     "internal",
     "api",
     "handlers",
     "openapi.go",
   );
-  const source = await readFile(openapiGo, "utf8");
-  return extractRawString(source, "openAPISpec");
+
+  try {
+    const source = await readFile(openapiGo, "utf8");
+    return extractRawString(source, "openAPISpec");
+  } catch (error) {
+    if (error?.code !== "ENOENT" && !String(error?.message ?? "").includes("raw string")) {
+      throw error;
+    }
+  }
+
+  const backendDir = path.join(resolvedRfidDir, "backend");
+  const { stdout } = await execFileAsync("go", ["run", "./cmd/openapi"], {
+    cwd: backendDir,
+    maxBuffer: 1024 * 1024 * 10,
+  });
+  return stdout;
 }
 
 async function loadFromUrl(url) {
