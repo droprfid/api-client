@@ -1,95 +1,33 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Drop RFID Public API",
-    "version": "1.2.0",
-    "description": "Public REST API for reading and writing scan sessions, orders, and SKUs. Authenticate with an org-level master API key as a Bearer token.\n\nRate limit: 60 requests/minute and 1000 requests/hour per API key. Standard X-RateLimit-* response headers are returned on every response."
+    "description": "REST API for Drop RFID. Public endpoints under /public use org-level API keys. Authenticated app endpoints, including routines, use Cognito JWTs and organization membership.\n\nPublic API rate limit: 60 requests/minute and 1000 requests/hour per API key. Standard X-RateLimit-* response headers are returned on public API responses.",
+    "title": "Drop RFID API",
+    "version": "1.2.0"
   },
   "servers": [
     {
-      "url": "https://www.droprfid.com/api/v1",
-      "description": "production"
-    }
-  ],
-  "security": [
-    {
-      "apiKeyAuth": []
+      "description": "production",
+      "url": "https://www.droprfid.com/api/v1"
     }
   ],
   "paths": {
-    "/public/sessions": {
-      "get": {
-        "summary": "List scan sessions for the authenticated organization",
-        "operationId": "listSessions",
-        "responses": {
-          "200": {
-            "description": "Array of sessions with embedded device metadata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Session"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      }
-    },
-    "/public/sessions/{session_id}": {
-      "get": {
-        "summary": "Fetch a single session with scanned RFID tags and device metadata",
-        "operationId": "getSession",
-        "parameters": [
-          {
-            "name": "session_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Session with embedded device and RFID entries.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SessionDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      }
-    },
     "/public/orders": {
       "get": {
+        "tags": [
+          "Public Orders"
+        ],
         "summary": "List orders for the authenticated organization",
         "operationId": "listOrders",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "parameters": [
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "type": "string"
@@ -98,17 +36,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Array of orders.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Order"
-                  }
+                  },
+                  "type": "array"
                 }
               }
-            }
+            },
+            "description": "Array of orders."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -119,28 +57,36 @@
         }
       },
       "post": {
+        "tags": [
+          "Public Orders"
+        ],
         "summary": "Create an order from SKU items",
         "operationId": "createOrder",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateOrderRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
-            "description": "Order created.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
                 }
               }
-            }
+            },
+            "description": "Order created."
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -156,29 +102,37 @@
     },
     "/public/orders/{order_id}": {
       "get": {
+        "tags": [
+          "Public Orders"
+        ],
         "summary": "Fetch an order with its items or RFIDs",
         "operationId": "getOrder",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "parameters": [
           {
-            "name": "order_id",
             "in": "path",
+            "name": "order_id",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Order detail.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
                 }
               }
-            }
+            },
+            "description": "Order detail."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -192,48 +146,137 @@
         }
       },
       "put": {
+        "tags": [
+          "Public Orders"
+        ],
         "summary": "Update an order's status",
         "operationId": "updateOrder",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "parameters": [
           {
-            "name": "order_id",
             "in": "path",
+            "name": "order_id",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
+                "properties": {
+                  "status": {
+                    "description": "pending | in_progress | review_required | blocked | completed | cancelled",
+                    "type": "string"
+                  }
+                },
                 "required": [
                   "status"
                 ],
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "description": "pending | in_progress | review_required | blocked | completed | cancelled"
-                  }
-                }
+                "type": "object"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "Updated order.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
                 }
               }
+            },
+            "description": "Updated order."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/public/sessions": {
+      "get": {
+        "tags": [
+          "Public Sessions"
+        ],
+        "summary": "List scan sessions for the authenticated organization",
+        "operationId": "listSessions",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Array of sessions with embedded device metadata."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/public/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "Public Sessions"
+        ],
+        "summary": "Fetch a single session with scanned RFID tags and device metadata",
+        "operationId": "getSession",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            },
+            "description": "Session with embedded device and RFID entries."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -249,21 +292,29 @@
     },
     "/public/skus": {
       "get": {
+        "tags": [
+          "Public SKUs"
+        ],
         "summary": "List SKUs for the authenticated organization",
         "operationId": "listSkus",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Array of SKUs.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/SKU"
-                  }
+                  },
+                  "type": "array"
                 }
               }
-            }
+            },
+            "description": "Array of SKUs."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -274,28 +325,36 @@
         }
       },
       "post": {
+        "tags": [
+          "Public SKUs"
+        ],
         "summary": "Create a SKU",
         "operationId": "createSku",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateSkuRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
-            "description": "SKU created.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SKU"
                 }
               }
-            }
+            },
+            "description": "SKU created."
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -310,99 +369,25 @@
       }
     },
     "/public/skus/{sku_id}": {
-      "get": {
-        "summary": "Fetch a SKU with its bound RFIDs",
-        "operationId": "getSku",
-        "parameters": [
-          {
-            "name": "sku_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "SKU detail with rfids[].",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SkuDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      },
-      "put": {
-        "summary": "Update a SKU (partial update)",
-        "operationId": "updateSku",
-        "parameters": [
-          {
-            "name": "sku_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSkuRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated SKU.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SKU"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      },
       "delete": {
+        "tags": [
+          "Public SKUs"
+        ],
         "summary": "Delete a SKU and its RFID bindings",
         "operationId": "deleteSku",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
         "parameters": [
           {
-            "name": "sku_id",
             "in": "path",
+            "name": "sku_id",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
@@ -420,186 +405,1077 @@
             "$ref": "#/components/responses/RateLimited"
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Public SKUs"
+        ],
+        "summary": "Fetch a SKU with its bound RFIDs",
+        "operationId": "getSku",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sku_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkuDetail"
+                }
+              }
+            },
+            "description": "SKU detail with rfids[]."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Public SKUs"
+        ],
+        "summary": "Update a SKU (partial update)",
+        "operationId": "updateSku",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sku_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSkuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SKU"
+                }
+              }
+            },
+            "description": "Updated SKU."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/routines": {
+      "get": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "List routines for the authenticated organization",
+        "description": "Requires Cognito authentication and organization membership.",
+        "operationId": "listRoutines",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_disabled",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Routine"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Array of routines."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Create a routine",
+        "description": "Requires Cognito authentication, organization membership, and admin access.",
+        "operationId": "createRoutine",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoutineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            },
+            "description": "Routine created."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/routines/{routine_id}": {
+      "delete": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Disable a routine",
+        "description": "Requires Cognito authentication, organization membership, and admin access.",
+        "operationId": "deleteRoutine",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routine_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Routine disabled."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Fetch a routine",
+        "description": "Requires Cognito authentication and organization membership.",
+        "operationId": "getRoutine",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routine_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            },
+            "description": "Routine detail."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Update a routine",
+        "description": "Requires Cognito authentication, organization membership, and admin access.",
+        "operationId": "updateRoutine",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routine_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoutineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            },
+            "description": "Updated routine."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/routines/{routine_id}/fields/{field_key}/resolve": {
+      "post": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Resolve a configured routine field value",
+        "description": "Requires Cognito authentication and organization membership.",
+        "operationId": "resolveRoutineField",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routine_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRoutineFieldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveRoutineFieldResponse"
+                }
+              }
+            },
+            "description": "Resolved field value or validation result."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     }
   },
   "components": {
-    "securitySchemes": {
-      "apiKeyAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "Authorization: Bearer drfid_sk_live_..."
-      }
-    },
     "responses": {
       "BadRequest": {
-        "description": "Invalid request body or parameters.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
             }
           }
-        }
+        },
+        "description": "Invalid request body or parameters."
       },
-      "Unauthorized": {
-        "description": "Missing or invalid API key.",
+      "Forbidden": {
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
             }
           }
-        }
+        },
+        "description": "Organization membership or admin access is required."
       },
       "NotFound": {
-        "description": "Resource not found.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
             }
           }
-        }
+        },
+        "description": "Resource not found."
       },
       "RateLimited": {
-        "description": "Rate limit exceeded.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
             }
           }
-        }
+        },
+        "description": "Rate limit exceeded."
+      },
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Missing or invalid credentials."
       }
     },
     "schemas": {
-      "Error": {
-        "type": "object",
+      "CreateOrderRequest": {
         "properties": {
-          "error": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            },
+            "type": "array"
+          },
+          "order_number": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "order_number"
+        ],
+        "type": "object"
       },
-      "Device": {
-        "type": "object",
+      "CreateRoutineRequest": {
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
+          "code": {
+            "type": "string"
           },
-          "org_id": {
-            "type": "string",
-            "format": "uuid"
+          "config": {
+            "$ref": "#/components/schemas/RoutineConfig"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
           },
           "name": {
             "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "config"
+        ],
+        "type": "object"
+      },
+      "CreateSkuRequest": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
           },
-          "serial_number": {
+          "barcode": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "product_title": {
+            "type": "string"
+          },
+          "rfids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "size": {
+            "type": "string"
+          },
+          "sku_code": {
+            "type": "string"
+          },
+          "variant_label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sku_code"
+        ],
+        "type": "object"
+      },
+      "Device": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
             "type": "string"
           },
           "device_type": {
             "type": "string"
           },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "serial_number": {
+            "type": "string"
+          },
           "status": {
-            "type": "string",
             "enum": [
               "active",
               "inactive",
               "decommissioned"
-            ]
-          },
-          "last_seen_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "RfidEntry": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "session_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "rfid_code": {
+            ],
             "type": "string"
           },
-          "tid": {
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Order": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "type": "array"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "status": {
+            "description": "pending | in_progress | review_required | blocked | completed | cancelled",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "OrderItem": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expected_quantity": {
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "product_title": {
+            "type": "string"
+          },
+          "sku_code": {
+            "type": "string"
+          },
+          "sku_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "OrderItemInput": {
+        "properties": {
+          "expected_quantity": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "sku_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sku_id",
+          "expected_quantity"
+        ],
+        "type": "object"
+      },
+      "ResolveRoutineFieldRequest": {
+        "properties": {
+          "input_method": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input_method",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ResolveRoutineFieldResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "field_key": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "session_metadata_patch": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "value": {
+            "$ref": "#/components/schemas/ResolvedRoutineValue"
+          }
+        },
+        "required": [
+          "ok",
+          "field_key"
+        ],
+        "type": "object"
+      },
+      "ResolvedRoutineValue": {
+        "properties": {
+          "entity_id": {
+            "type": "string"
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "entity_type",
+          "entity_id",
+          "label"
+        ],
+        "type": "object"
+      },
+      "RfidEntry": {
+        "properties": {
+          "antenna": {
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "read_count": {
+            "type": "integer"
+          },
+          "rfid_code": {
             "type": "string"
           },
           "rssi": {
             "type": "integer"
           },
-          "read_count": {
-            "type": "integer"
-          },
-          "antenna": {
-            "type": "integer"
-          },
           "scanned_at": {
-            "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "tid": {
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "Session": {
-        "type": "object",
+      "Routine": {
         "properties": {
+          "code": {
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RoutineConfig"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
           },
           "org_id": {
-            "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RoutineAction": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "target_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "label"
+        ],
+        "type": "object"
+      },
+      "RoutineConfig": {
+        "properties": {
+          "completion_actions": {
+            "items": {
+              "$ref": "#/components/schemas/RoutineAction"
+            },
+            "type": "array"
+          },
+          "finish_fields": {
+            "items": {
+              "$ref": "#/components/schemas/RoutineField"
+            },
+            "type": "array"
+          },
+          "session_view": {
+            "$ref": "#/components/schemas/RoutineSessionView"
+          },
+          "start_fields": {
+            "items": {
+              "$ref": "#/components/schemas/RoutineField"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "RoutineDefaultSort": {
+        "properties": {
+          "direction": {
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "direction"
+        ],
+        "type": "object"
+      },
+      "RoutineField": {
+        "properties": {
+          "capture_methods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "display_in_sessions": {
+            "type": "boolean"
+          },
+          "entity": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "resolver": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "searchable": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type"
+        ],
+        "type": "object"
+      },
+      "RoutineSessionView": {
+        "properties": {
+          "default_columns": {
+            "items": {
+              "$ref": "#/components/schemas/RoutineViewColumn"
+            },
+            "type": "array"
+          },
+          "default_sort": {
+            "$ref": "#/components/schemas/RoutineDefaultSort"
+          }
+        },
+        "type": "object"
+      },
+      "RoutineViewColumn": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "key",
+          "label"
+        ],
+        "type": "object"
+      },
+      "SKU": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
           },
           "customer_id": {
             "type": "string"
           },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "product_title": {
+            "type": "string"
+          },
+          "rfid_count": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "string"
+          },
+          "sku_code": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "variant_label": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Session": {
+        "properties": {
+          "completed_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/Device"
+          },
           "device_id": {
-            "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "org_id": {
+            "format": "uuid",
+            "type": "string"
           },
           "status": {
-            "type": "string",
             "enum": [
               "active",
               "completed",
               "cancelled"
-            ]
-          },
-          "metadata": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "completed_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "device": {
-            "$ref": "#/components/schemas/Device"
+            ],
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
       "SessionDetail": {
         "allOf": [
@@ -607,179 +1483,17 @@
             "$ref": "#/components/schemas/Session"
           },
           {
-            "type": "object",
             "properties": {
               "rfids": {
-                "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/RfidEntry"
-                }
+                },
+                "type": "array"
               }
-            }
+            },
+            "type": "object"
           }
         ]
-      },
-      "OrderItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "order_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "sku_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "sku_code": {
-            "type": "string"
-          },
-          "expected_quantity": {
-            "type": "integer"
-          },
-          "product_title": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "attributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "Order": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "customer_id": {
-            "type": "string"
-          },
-          "order_number": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "description": "pending | in_progress | review_required | blocked | completed | cancelled"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderItem"
-            }
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "OrderItemInput": {
-        "type": "object",
-        "required": [
-          "sku_id",
-          "expected_quantity"
-        ],
-        "properties": {
-          "sku_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "expected_quantity": {
-            "type": "integer",
-            "minimum": 1
-          }
-        }
-      },
-      "CreateOrderRequest": {
-        "type": "object",
-        "required": [
-          "order_number"
-        ],
-        "properties": {
-          "order_number": {
-            "type": "string"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderItemInput"
-            }
-          }
-        }
-      },
-      "SKU": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "customer_id": {
-            "type": "string"
-          },
-          "sku_code": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "product_title": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "brand": {
-            "type": "string"
-          },
-          "color": {
-            "type": "string"
-          },
-          "size": {
-            "type": "string"
-          },
-          "variant_label": {
-            "type": "string"
-          },
-          "barcode": {
-            "type": "string"
-          },
-          "attributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "rfid_count": {
-            "type": "integer"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
       },
       "SkuDetail": {
         "allOf": [
@@ -787,76 +1501,49 @@
             "$ref": "#/components/schemas/SKU"
           },
           {
-            "type": "object",
             "properties": {
               "rfids": {
-                "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "type": "array"
               }
-            }
+            },
+            "type": "object"
           }
         ]
       },
-      "CreateSkuRequest": {
-        "type": "object",
-        "required": [
-          "sku_code"
-        ],
-        "properties": {
-          "sku_code": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "product_title": {
-            "type": "string"
-          },
-          "image_url": {
-            "type": "string"
-          },
-          "brand": {
-            "type": "string"
-          },
-          "color": {
-            "type": "string"
-          },
-          "size": {
-            "type": "string"
-          },
-          "variant_label": {
-            "type": "string"
-          },
-          "barcode": {
-            "type": "string"
-          },
-          "attributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "rfids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "UpdateSkuRequest": {
-        "type": "object",
+      "UpdateRoutineRequest": {
         "description": "All fields are optional. Only provided fields are updated.",
         "properties": {
+          "code": {
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RoutineConfig"
+          },
           "description": {
             "type": "string"
           },
-          "product_title": {
-            "type": "string"
+          "enabled": {
+            "type": "boolean"
           },
-          "image_url": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateSkuRequest": {
+        "description": "All fields are optional. Only provided fields are updated.",
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "barcode": {
             "type": "string"
           },
           "brand": {
@@ -865,22 +1552,36 @@
           "color": {
             "type": "string"
           },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "product_title": {
+            "type": "string"
+          },
           "size": {
             "type": "string"
           },
           "variant_label": {
             "type": "string"
-          },
-          "barcode": {
-            "type": "string"
-          },
-          "attributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
           }
-        }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "description": "Authorization: Bearer drfid_sk_live_...",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "cognitoAuth": {
+        "bearerFormat": "JWT",
+        "description": "Cognito JWT for authenticated organization users.",
+        "scheme": "bearer",
+        "type": "http"
       }
     }
   }
