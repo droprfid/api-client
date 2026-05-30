@@ -20,6 +20,7 @@ From the production API:
 ./scripts/sync-openapi.sh --source-url https://www.droprfid.com/api/v1/openapi.json
 ```
 
-The GitHub Actions workflow in `.github/workflows/sync-openapi.yml` refreshes
-the checked-in spec from production and commits changes when the public API
-contract changes.
+The GitHub Actions workflow in `.github/workflows/sync-openapi.yml` is a
+manual fallback. The normal update path is the `moneypro/rfid` GitHub Action,
+which regenerates this file from the `main` branch and commits here when the
+public API contract changes.

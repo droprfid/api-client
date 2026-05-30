@@ -7,11 +7,6 @@ on:
         description: Public OpenAPI JSON URL to sync from
         required: false
         default: https://www.droprfid.com/api/v1/openapi.json
-  repository_dispatch:
-    types:
-      - sync-openapi
-  schedule:
-    - cron: "17 10 * * *"
 
 permissions:
   contents: write
@@ -20,7 +15,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      SOURCE_URL: ${{ inputs.source_url || github.event.client_payload.source_url || 'https://www.droprfid.com/api/v1/openapi.json' }}
+      SOURCE_URL: ${{ inputs.source_url || 'https://www.droprfid.com/api/v1/openapi.json' }}
 
     steps:
       - name: Checkout api-client
