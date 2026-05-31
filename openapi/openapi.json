@@ -191,7 +191,7 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": [
           "Public Orders"
         ],
@@ -496,7 +496,7 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": [
           "Public SKUs"
         ],
