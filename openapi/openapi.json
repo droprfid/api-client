@@ -457,6 +457,7 @@
           "Public SKUs"
         ],
         "summary": "Fetch a SKU with its bound RFIDs",
+        "description": "Returns the full rfids[] array by default for backward compatibility. Provide rfids_limit and optional rfids_offset to return one RFID page with rfids_page metadata while rfid_count remains the total linked RFID count.",
         "operationId": "getSku",
         "security": [
           {
@@ -471,6 +472,22 @@
             "schema": {
               "format": "uuid",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rfids_limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rfids_offset",
+            "required": false,
+            "schema": {
+              "type": "integer"
             }
           }
         ],
@@ -1272,6 +1289,23 @@
         },
         "type": "object"
       },
+      "RfidPageInfo": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "Routine": {
         "properties": {
           "code": {
@@ -1591,6 +1625,9 @@
                   "type": "string"
                 },
                 "type": "array"
+              },
+              "rfids_page": {
+                "$ref": "#/components/schemas/RfidPageInfo"
               }
             },
             "type": "object"
