@@ -12,6 +12,52 @@
     }
   ],
   "paths": {
+    "/ai/generate-routine": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Generate a routine draft from a natural-language description",
+        "description": "Uses AI to produce a validated CreateRoutineRequest and explanation. The routine is not persisted until the caller submits it to create or import.",
+        "operationId": "generateRoutine",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRoutineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateRoutineResponse"
+                }
+              }
+            },
+            "description": "Generated routine draft."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/public/ai/generate-session": {
       "post": {
         "tags": [
@@ -658,6 +704,98 @@
         }
       }
     },
+    "/routines/import": {
+      "post": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Import a routine manifest",
+        "description": "Parses and validates YAML or JSON routine manifest content, then upserts routines by code in the authenticated organization. Requires admin access.",
+        "operationId": "importRoutines",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutineManifestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutineImportResponse"
+                }
+              }
+            },
+            "description": "Import result."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/routines/import/preview": {
+      "post": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Preview a routine manifest import",
+        "description": "Parses and validates YAML or JSON routine manifest content for the authenticated organization without writing changes. Requires admin access.",
+        "operationId": "previewRoutineImport",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutineManifestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutineImportResponse"
+                }
+              }
+            },
+            "description": "Import preview."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/routines/{routine_id}": {
       "delete": {
         "tags": [
@@ -1064,6 +1202,33 @@
         },
         "type": "object"
       },
+      "GenerateRoutineRequest": {
+        "properties": {
+          "description": {
+            "description": "Natural-language description of the routine to draft.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "type": "object"
+      },
+      "GenerateRoutineResponse": {
+        "properties": {
+          "explanation": {
+            "type": "string"
+          },
+          "routine": {
+            "$ref": "#/components/schemas/CreateRoutineRequest"
+          }
+        },
+        "required": [
+          "routine",
+          "explanation"
+        ],
+        "type": "object"
+      },
       "GenerateSessionRequest": {
         "properties": {
           "description": {
@@ -1355,12 +1520,23 @@
             "type": "string"
           },
           "mode": {
+            "enum": [
+              "automatic",
+              "review_only",
+              "approval_required",
+              "exception_gated"
+            ],
             "type": "string"
           },
           "target_id": {
             "type": "string"
           },
           "type": {
+            "enum": [
+              "webhook_event",
+              "export_session_report",
+              "no_action"
+            ],
             "type": "string"
           }
         },
@@ -1419,6 +1595,13 @@
         "properties": {
           "capture_methods": {
             "items": {
+              "enum": [
+                "barcode",
+                "manual",
+                "rfid",
+                "qr",
+                "qr_code"
+              ],
               "type": "string"
             },
             "type": "array"
@@ -1452,6 +1635,16 @@
             "type": "boolean"
           },
           "type": {
+            "enum": [
+              "text",
+              "select",
+              "reference",
+              "number",
+              "boolean",
+              "date",
+              "datetime",
+              "time"
+            ],
             "type": "string"
           }
         },
@@ -1459,6 +1652,85 @@
           "key",
           "label",
           "type"
+        ],
+        "type": "object"
+      },
+      "RoutineImportItem": {
+        "properties": {
+          "action": {
+            "enum": [
+              "create",
+              "update",
+              "skip"
+            ],
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "routine": {
+            "$ref": "#/components/schemas/CreateRoutineRequest"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "routine"
+        ],
+        "type": "object"
+      },
+      "RoutineImportResponse": {
+        "properties": {
+          "created": {
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RoutineImportItem"
+            },
+            "type": "array"
+          },
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/CreateRoutineRequest"
+            },
+            "type": "array"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "updated": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created",
+          "updated",
+          "skipped",
+          "routines",
+          "items"
+        ],
+        "type": "object"
+      },
+      "RoutineManifestRequest": {
+        "properties": {
+          "content": {
+            "description": "YAML or JSON manifest content. May contain a routine_bundle with routines[] or a single CreateRoutineRequest.",
+            "type": "string"
+          },
+          "format": {
+            "description": "Optional parser hint: yaml, yml, or json.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
         ],
         "type": "object"
       },
