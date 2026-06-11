@@ -31,8 +31,11 @@ Do not commit real API keys. Store them in your service secret manager or local
 `.env` file, then pass them to API calls through environment variables.
 
 See [docs/public-api.md](docs/public-api.md) for copy-paste cURL examples,
-manual key guidance, endpoint notes, and response handling. A dependency-free
-Node example is available at [examples/node-public-api.mjs](examples/node-public-api.mjs).
+manual key guidance, endpoint notes, and response handling. Middleware that
+receives Drop RFID routine/webhook callbacks should also review
+[docs/webhooks.md](docs/webhooks.md). Dependency-free Node examples are
+available at [examples/node-public-api.mjs](examples/node-public-api.mjs) and
+[examples/node-webhook-receiver.mjs](examples/node-webhook-receiver.mjs).
 
 ## Refresh the OpenAPI spec
 
