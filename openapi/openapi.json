@@ -301,6 +301,142 @@
         }
       }
     },
+    "/public/routines": {
+      "get": {
+        "tags": [
+          "Public Routines"
+        ],
+        "summary": "List routines for the authenticated organization",
+        "description": "The organization is resolved from the API key.",
+        "operationId": "listPublicRoutines",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_disabled",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Routine"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Array of routines."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Public Routines"
+        ],
+        "summary": "Create a routine",
+        "description": "Creates a routine in the organization resolved from the API key.",
+        "operationId": "createPublicRoutine",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoutineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            },
+            "description": "Routine created."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/public/routines/import": {
+      "post": {
+        "tags": [
+          "Public Routines"
+        ],
+        "summary": "Import a routine manifest",
+        "description": "Parses and validates YAML or JSON routine manifest content, then upserts routines by code in the organization resolved from the API key. Idempotent — safe to re-run for bulk seeding.",
+        "operationId": "importPublicRoutines",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutineManifestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutineImportResponse"
+                }
+              }
+            },
+            "description": "Import result."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
     "/public/sessions": {
       "get": {
         "tags": [
