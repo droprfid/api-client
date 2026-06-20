@@ -104,6 +104,52 @@
         }
       }
     },
+    "/public/graphql": {
+      "post": {
+        "tags": [
+          "Public GraphQL"
+        ],
+        "summary": "Execute a GraphQL query or mutation against the public schema",
+        "description": "Single GraphQL endpoint over sessions, RFID entries, SKUs, and orders, resolved for the organization tied to the API key. Useful for fetching a session's scanned tags already joined to their SKUs in one round-trip — e.g. `query($id: ID!) { session(id: $id) { rfids { epc sku { id skuCode productTitle } } } }` — for fulfillment reconciliation. Reads and the createSku/updateSku/createOrder mutations are supported.",
+        "operationId": "publicGraphQL",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphQLRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphQLResponse"
+                }
+              }
+            },
+            "description": "GraphQL execution result. Field-level errors are returned in the errors array with a 200 status."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
     "/public/orders": {
       "get": {
         "tags": [
@@ -1399,6 +1445,41 @@
           },
           "sku_code": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GraphQLRequest": {
+        "properties": {
+          "operationName": {
+            "type": "string"
+          },
+          "query": {
+            "description": "GraphQL query or mutation document.",
+            "type": "string"
+          },
+          "variables": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "GraphQLResponse": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
           }
         },
         "type": "object"
