@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -19,11 +19,12 @@ const seenEvents = new Map();
 function printUsage() {
   console.error(`Usage:
   PORT=3000 \\
-  DROP_RFID_WEBHOOK_SECRET=replace_with_shared_webhook_secret \\
+  DROP_RFID_WEBHOOK_SECRET=your_webhook_signing_secret \\
   node examples/node-webhook-receiver.mjs
 
 Optional:
   DROP_RFID_WEBHOOK_PATH=/webhooks/drop-rfid
+  DROP_RFID_SIGNATURE_TOLERANCE_SECONDS=300
   DROP_RFID_ALLOW_INSECURE_WEBHOOKS=true
   DROP_RFID_FETCH_SESSION_DETAILS=true
   DROP_RFID_API_BASE_URL=https://www.droprfid.com/api/v1
@@ -47,15 +48,52 @@ function fixedTimeEqual(left, right) {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function verifyWebhook(request) {
+const signatureToleranceSeconds = Number(
+  process.env.DROP_RFID_SIGNATURE_TOLERANCE_SECONDS ?? 300,
+);
+
+// Parses the "t=<unix>,v1=<hex>" value of the X-DRFID-Signature header.
+function parseSignatureHeader(headerValue) {
+  const fields = {};
+  for (const segment of String(headerValue).split(",")) {
+    const separator = segment.indexOf("=");
+    if (separator === -1) continue;
+    fields[segment.slice(0, separator).trim()] = segment.slice(separator + 1).trim();
+  }
+  return fields;
+}
+
+// Verifies the Drop RFID webhook signature:
+//   X-DRFID-Signature: t=<unix-seconds>,v1=<hex(hmac_sha256(secret, `${t}.${rawBody}`))>
+// The HMAC covers the exact raw request body, so verify before parsing JSON.
+function verifySignature(headers, rawBody) {
   if (!webhookSecret) {
     return allowInsecureWebhooks;
   }
 
-  // Placeholder: the exact Drop RFID signing scheme is not defined in this repo.
-  // Replace this shared-secret header with the published signature verifier.
-  const receivedSecret = request.headers["x-drop-rfid-webhook-secret"];
-  return typeof receivedSecret === "string" && fixedTimeEqual(receivedSecret, webhookSecret);
+  const header = headers["x-drfid-signature"];
+  if (typeof header !== "string") {
+    return false;
+  }
+
+  const { t, v1 } = parseSignatureHeader(header);
+  if (!t || !v1) {
+    return false;
+  }
+
+  // Reject stale timestamps to limit replay (Drop RFID also sends X-DRFID-Timestamp).
+  const timestamp = Number(t);
+  if (!Number.isFinite(timestamp) ||
+      Math.abs(Date.now() / 1000 - timestamp) > signatureToleranceSeconds) {
+    return false;
+  }
+
+  const expected = createHmac("sha256", webhookSecret)
+    .update(`${t}.`)
+    .update(rawBody)
+    .digest("hex");
+
+  return fixedTimeEqual(v1, expected);
 }
 
 function readRequestBody(request) {
@@ -185,6 +223,11 @@ async function processEvent(event) {
     case "session.completed":
       await handleSessionCompleted(event);
       break;
+    case "session.failed":
+      console.log("Handled session.failed", JSON.stringify({
+        session_id: sessionIdFrom(event),
+      }));
+      break;
     case "routine.completed":
       await handleRoutineCompleted(event);
       break;
@@ -202,16 +245,17 @@ async function handleWebhook(request, response) {
     return;
   }
 
-  if (!verifyWebhook(request)) {
-    jsonResponse(response, 401, { error: "invalid_webhook_secret" });
-    return;
-  }
-
+  // Read the raw body first — the signature is an HMAC over the exact bytes.
   let rawBody;
   try {
     rawBody = await readRequestBody(request);
   } catch (error) {
     jsonResponse(response, 413, { error: "payload_too_large", message: error.message });
+    return;
+  }
+
+  if (!verifySignature(request.headers, rawBody)) {
+    jsonResponse(response, 401, { error: "invalid_signature" });
     return;
   }
 
