@@ -170,7 +170,30 @@ curl -sS "$DROP_RFID_API_BASE_URL/public/ai/generate-session" \
   -d '{"description":"Three black medium logo tees scanned at packing station 2."}'
 ```
 
-## 6. Minimal Service Wrapper
+## 6. GraphQL Endpoint
+
+`POST /public/graphql` resolves reads — plus the `createSku`, `updateSku`, and
+`createOrder` mutations — over the same data, scoped to the organization tied to
+your API key. It is most useful when REST would need several round-trips. The
+common case is reconciling a completed session: fetch its scanned tags already
+joined to their SKUs alongside the order's expected quantities in one request.
+
+```bash
+curl -sS "$DROP_RFID_API_BASE_URL/public/graphql" \
+  -X POST \
+  -H "Authorization: Bearer $DROP_RFID_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query Reconcile($sessionId: ID!, $orderId: ID!) { session(id: $sessionId) { id status rfidCount rfids { epc sku { id skuCode productTitle } } } order(id: $orderId) { orderNumber status items { expectedQuantity sku { id skuCode } } } }",
+    "variables": { "sessionId": "SESSION_UUID", "orderId": "ORDER_UUID" }
+  }'
+```
+
+Field-level errors are returned in an `errors` array with a `200` status, as is
+standard for GraphQL. The endpoint is published in
+[`../openapi/openapi.json`](../openapi/openapi.json) as `operationId: publicGraphQL`.
+
+## 7. Minimal Service Wrapper
 
 Use one small HTTP wrapper in middleware so auth, JSON parsing, and rate-limit
 handling are consistent:

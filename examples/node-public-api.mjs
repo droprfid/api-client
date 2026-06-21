@@ -74,7 +74,16 @@ const api = {
     method: "POST",
     body: JSON.stringify({ description }),
   }),
+  graphql: (query, variables) => dropRfid("/public/graphql", {
+    method: "POST",
+    body: JSON.stringify({ query, variables }),
+  }),
 };
+
+const RECONCILE_QUERY = `query Reconcile($sessionId: ID!, $orderId: ID!) {
+  session(id: $sessionId) { id status rfidCount rfids { epc sku { id skuCode productTitle } } }
+  order(id: $orderId) { orderNumber status items { expectedQuantity sku { id skuCode } } }
+}`;
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -94,6 +103,7 @@ function printUsage() {
   DROP_RFID_API_KEY=... node examples/node-public-api.mjs list-sessions
   DROP_RFID_API_KEY=... DROP_RFID_SESSION_ID=... node examples/node-public-api.mjs get-session
   DROP_RFID_API_KEY=... node examples/node-public-api.mjs generate-session "description"
+  DROP_RFID_API_KEY=... DROP_RFID_SESSION_ID=... DROP_RFID_ORDER_ID=... node examples/node-public-api.mjs reconcile
 `);
 }
 
@@ -139,6 +149,10 @@ async function main() {
     "list-sessions": () => api.listSessions(),
     "get-session": () => api.getSession(requireEnv("DROP_RFID_SESSION_ID")),
     "generate-session": () => api.generateSession(arg ?? "One demo item scanned at station 1."),
+    "reconcile": () => api.graphql(RECONCILE_QUERY, {
+      sessionId: requireEnv("DROP_RFID_SESSION_ID"),
+      orderId: requireEnv("DROP_RFID_ORDER_ID"),
+    }),
   })[command]?.();
 
   if (result === undefined) {
