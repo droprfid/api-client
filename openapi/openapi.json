@@ -170,6 +170,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "description": "Return orders carrying this organization tag. Repeat the parameter to require multiple tags.",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1254,6 +1263,12 @@
           },
           "order_number": {
             "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -1513,6 +1528,12 @@
             "description": "pending | in_progress | review_required | blocked | completed | cancelled",
             "type": "string"
           },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/OrderTag"
+            },
+            "type": "array"
+          },
           "updated_at": {
             "format": "date-time",
             "type": "string"
@@ -1574,6 +1595,30 @@
           "sku_id",
           "expected_quantity"
         ],
+        "type": "object"
+      },
+      "OrderTag": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "ResolveRoutineFieldRequest": {
