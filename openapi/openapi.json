@@ -104,6 +104,252 @@
         }
       }
     },
+    "/public/containers": {
+      "get": {
+        "tags": [
+          "Public Containers"
+        ],
+        "summary": "List containers for the authenticated organization",
+        "description": "A container is a named collection with recorded contents and optional RFID/barcode identifiers. Containers never appear under /public/orders, and transaction orders never appear here.",
+        "operationId": "listContainers",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "description": "Return containers carrying this organization tag. Repeat the parameter to require multiple tags.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Container"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Array of containers."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Public Containers"
+        ],
+        "summary": "Create a container with recorded contents",
+        "description": "display_name is required. items reference owned SKUs; identifiers bind an RFID EPC or barcode to this container and must be free within the organization.",
+        "operationId": "createContainer",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "display_name": {
+                    "description": "Friendly label, 1..200 characters.",
+                    "type": "string"
+                  },
+                  "identifiers": {
+                    "items": {
+                      "$ref": "#/components/schemas/ContainerIdentifier"
+                    },
+                    "type": "array"
+                  },
+                  "items": {
+                    "items": {
+                      "$ref": "#/components/schemas/OrderItemInput"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "display_name"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Container"
+                }
+              }
+            },
+            "description": "Container created."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/public/containers/{container_id}": {
+      "get": {
+        "tags": [
+          "Public Containers"
+        ],
+        "summary": "Fetch a container with its recorded contents and identifiers",
+        "description": "Returns 404 for a transaction order id.",
+        "operationId": "getContainer",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "container_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Container"
+                }
+              }
+            },
+            "description": "Container detail."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Public Containers"
+        ],
+        "summary": "Replace a container's name, contents, or identifiers",
+        "description": "revision is required and must match the stored value; a stale revision returns 409 rather than overwriting a concurrent edit. Supplying items or identifiers replaces that collection wholesale. Container status, order_number and tags are not editable here.",
+        "operationId": "updateContainer",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "container_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "identifiers": {
+                    "items": {
+                      "$ref": "#/components/schemas/ContainerIdentifier"
+                    },
+                    "type": "array"
+                  },
+                  "items": {
+                    "items": {
+                      "$ref": "#/components/schemas/OrderItemInput"
+                    },
+                    "type": "array"
+                  },
+                  "revision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Container"
+                }
+              }
+            },
+            "description": "Updated container."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
     "/public/graphql": {
       "post": {
         "tags": [
@@ -987,6 +1233,39 @@
         }
       }
     },
+    "/routines/templates/track-containers/install": {
+      "post": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Install the curated container routine idempotently",
+        "description": "Requires organization administrator. Preserves an existing installation.",
+        "operationId": "installContainerRoutine",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            },
+            "description": "Installed routine"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/routines/{routine_id}": {
       "delete": {
         "tags": [
@@ -1197,6 +1476,141 @@
           }
         }
       }
+    },
+    "/routines/{routine_id}/lookup": {
+      "post": {
+        "tags": [
+          "Routines"
+        ],
+        "summary": "Resolve typed identifiers to named containers",
+        "description": "Requires X-Routine-Capabilities: container_lookup_v1 and an enabled container routine. Bounded to 100 identifiers. Does not save observations.",
+        "operationId": "lookupContainers",
+        "security": [
+          {
+            "cognitoAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routine_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "identifiers": {
+                    "items": {
+                      "properties": {
+                        "observed_at": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "rfid",
+                            "barcode"
+                          ],
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "value"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "identifiers"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "results": {
+                      "items": {
+                        "properties": {
+                          "display_name": {
+                            "type": "string"
+                          },
+                          "observed_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "order_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "matched",
+                              "unknown",
+                              "conflict"
+                            ],
+                            "type": "string"
+                          },
+                          "type": {
+                            "enum": [
+                              "rfid",
+                              "barcode"
+                            ],
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "value",
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "results"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "One result per identifier"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1253,6 +1667,79 @@
       }
     },
     "schemas": {
+      "Container": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "description": "Friendly label, 1..200 characters.",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/ContainerIdentifier"
+            },
+            "type": "array"
+          },
+          "items": {
+            "description": "Recorded contents. These are not evidence that each item was individually scanned.",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "type": "array"
+          },
+          "order_number": {
+            "description": "Server-generated stable reference. Renaming a container does not change it.",
+            "type": "string"
+          },
+          "purpose": {
+            "description": "Always \"container\" on this path.",
+            "type": "string"
+          },
+          "revision": {
+            "description": "Increments on every edit. Send the value you read back in PATCH; a stale value returns 409.",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ContainerIdentifier": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "rfid",
+              "barcode"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "description": "RFID EPCs are compared as uppercase hex with spaces removed. Barcodes are compared verbatim, preserving leading zeroes.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      },
       "CreateOrderRequest": {
         "properties": {
           "items": {
@@ -1522,6 +2009,10 @@
             "type": "array"
           },
           "order_number": {
+            "type": "string"
+          },
+          "purpose": {
+            "description": "Always \"transaction\" on this path. Containers are served from /public/containers.",
             "type": "string"
           },
           "status": {
@@ -1825,6 +2316,24 @@
             },
             "type": "array"
           },
+          "scan": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "container_lookup"
+                ],
+                "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mode",
+              "version"
+            ],
+            "type": "object"
+          },
           "session_view": {
             "$ref": "#/components/schemas/RoutineSessionView"
           },
@@ -1833,6 +2342,24 @@
               "$ref": "#/components/schemas/RoutineField"
             },
             "type": "array"
+          },
+          "template": {
+            "properties": {
+              "id": {
+                "enum": [
+                  "track-containers"
+                ],
+                "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "type": "object"
           }
         },
         "type": "object"
