@@ -825,10 +825,29 @@
           "Public SKUs"
         ],
         "summary": "List SKUs for the authenticated organization",
+        "description": "Always returns one page, newest first; there is no unbounded mode. Pass limit (1-1000; default 100) to control the page size. When more SKUs follow, the response carries an X-Next-Cursor header; pass its value as cursor to fetch the next page. The last page has no X-Next-Cursor. The body is a JSON array.",
         "operationId": "listSkus",
         "security": [
           {
             "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -843,7 +862,10 @@
                 }
               }
             },
-            "description": "Array of SKUs."
+            "description": "Array of SKUs, newest first."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
